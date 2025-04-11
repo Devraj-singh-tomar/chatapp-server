@@ -3,6 +3,7 @@ import userRoute from "./routes/user.route.js";
 import { connectDB } from "./utils/features.js";
 import { config } from "dotenv";
 import { errorMiddleware } from "./middlewares/error.js";
+import cookieParser from "cookie-parser";
 
 config({
   path: "./.env",
@@ -17,6 +18,7 @@ const app = express();
 
 // Middleware's
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/user", userRoute);
 
