@@ -173,3 +173,45 @@ export const removeMembers = TryCatch(async (req, res, next) => {
     message: "Member removed successfully",
   });
 });
+
+export const leaveGroup = TryCatch(async (req, res, next) => {
+  const chatId = req.params.id;
+
+  const chat = await Chat.findById(chatId);
+
+  if (!chat) return next(new ErrorHandler("Chat not found", 400));
+
+  if (!chat.groupChat)
+    return next(new ErrorHandler("This is not a group chat", 400));
+
+  const remainingMembers = chat.members.filter(
+    (member) => member.toString() !== req.user.toString()
+  );
+
+  if (remainingMembers.length < 2) {
+    return next(new ErrorHandler("Group must have at least 2 members", 400));
+  }
+
+  if (chat.creator.toString() === req.user.toString()) {
+    const randomElement = Math.floor(Math.random() * remainingMembers.length);
+    const newCreator = remainingMembers[randomElement];
+    chat.creator = newCreator;
+  }
+
+  chat.members = remainingMembers;
+
+  const [user] = await Promise.all([
+    User.findById(req.user, "name"),
+    chat.save(),
+  ]);
+
+  emitEvent(req, ALERT, chat.members, {
+    chatId,
+    message: `User ${user.name} has left the group`,
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "You leaved group successfully",
+  });
+});

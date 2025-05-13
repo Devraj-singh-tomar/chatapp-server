@@ -4,6 +4,7 @@ import {
   addMembers,
   getMyChats,
   getMyGroups,
+  leaveGroup,
   newGroupChat,
   removeMembers,
 } from "../controllers/chat.controller.js";
@@ -19,5 +20,6 @@ app.get("/my", getMyChats);
 app.get("/my/groups", getMyGroups);
 app.put("/addmembers", addMembers);
 app.put("/removemembers", removeMembers);
+app.delete("/leave/:id", leaveGroup);
 
 export default app;
