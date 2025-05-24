@@ -1,5 +1,6 @@
 import { compare } from "bcrypt";
 import { User } from "../models/user.model.js";
+import { Chat } from "../models/chat.model.js";
 import { cookieOptions, sendToken } from "../utils/features.js";
 import { TryCatch } from "../middlewares/error.js";
 import { ErrorHandler } from "../utils/utility.js";
@@ -62,8 +63,27 @@ export const logout = TryCatch(async (req, res) => {
 export const searchUser = TryCatch(async (req, res) => {
   const { name = "" } = req.query;
 
+  // Finding All My Chats
+  const myChats = await Chat.find({ groupChat: false, members: req.user });
+
+  // Extracting All user From My Chats
+  const allUsersFromMyChats = myChats.flatMap((chat) => chat.members);
+
+  // finding All Users Except Me and My Friends
+  const allUsersExceptMeAndFriends = await User.find({
+    _id: { $nin: allUsersFromMyChats },
+    name: { $regex: name, $options: "i" },
+  });
+
+  // Modifying The Response
+  const users = allUsersExceptMeAndFriends.map(({ _id, name, avatar }) => ({
+    _id,
+    name,
+    avatar: avatar.url,
+  }));
+
   return res.status(200).json({
     success: true,
-    message: name,
+    users,
   });
 });
