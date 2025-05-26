@@ -8,7 +8,7 @@ import { ErrorHandler } from "../utils/utility.js";
 import { NEW_REQUEST, REFETCH_CHATS } from "../constants/events.js";
 
 // Create New User and save cookie
-export const newUser = async (req, res) => {
+export const newUser = async (req, res, next) => {
   const { name, bio, password, username } = req.body;
 
   const avatar = {
@@ -43,8 +43,10 @@ export const login = TryCatch(async (req, res, next) => {
   sendToken(res, user, 200, `Welcome back, ${user.name}`);
 });
 
-export const getMyProfile = TryCatch(async (req, res) => {
+export const getMyProfile = TryCatch(async (req, res, next) => {
   const user = await User.findById(req.user);
+
+  if (!user) return next(new ErrorHandler("User not found", 404));
 
   res.status(200).json({
     success: true,
@@ -52,7 +54,7 @@ export const getMyProfile = TryCatch(async (req, res) => {
   });
 });
 
-export const logout = TryCatch(async (req, res) => {
+export const logout = TryCatch(async (req, res, next) => {
   return res
     .status(200)
     .cookie("token", "", { ...cookieOptions, maxAge: 0 })
@@ -62,7 +64,7 @@ export const logout = TryCatch(async (req, res) => {
     });
 });
 
-export const searchUser = TryCatch(async (req, res) => {
+export const searchUser = TryCatch(async (req, res, next) => {
   const { name = "" } = req.query;
 
   // Finding All My Chats
@@ -146,7 +148,7 @@ export const acceptFriendRequest = TryCatch(async (req, res, next) => {
   await Promise.all([
     Chat.create({
       members,
-      name: `${request.sender.name} - ${request.receiver.name} `,
+      name: `${request.sender.name} - ${request.receiver.name}`,
     }),
     request.deleteOne(),
   ]);
@@ -157,5 +159,26 @@ export const acceptFriendRequest = TryCatch(async (req, res, next) => {
     success: true,
     message: "Friend request accepted",
     senderId: request.sender._id,
+  });
+});
+
+export const getMyNotifications = TryCatch(async (req, res, next) => {
+  const requests = await Request.find({ receiver: req.user }).populate(
+    "sender",
+    "name avatar"
+  );
+
+  const allRequests = requests.map(({ _id, sender }) => ({
+    _id,
+    sender: {
+      _id: sender._id,
+      name: sender.name,
+      avatar: sender.avatar.url,
+    },
+  }));
+
+  return res.status(200).json({
+    success: true,
+    allRequests,
   });
 });
