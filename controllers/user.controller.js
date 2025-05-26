@@ -5,7 +5,7 @@ import { Request } from "../models/request.model.js";
 import { cookieOptions, emitEvent, sendToken } from "../utils/features.js";
 import { TryCatch } from "../middlewares/error.js";
 import { ErrorHandler } from "../utils/utility.js";
-import { NEW_REQUEST } from "../constants/events.js";
+import { NEW_REQUEST, REFETCH_CHATS } from "../constants/events.js";
 
 // Create New User and save cookie
 export const newUser = async (req, res) => {
@@ -115,5 +115,47 @@ export const sendFriendRequest = TryCatch(async (req, res, next) => {
   return res.status(200).json({
     success: true,
     message: "Friend request sent",
+  });
+});
+
+export const acceptFriendRequest = TryCatch(async (req, res, next) => {
+  const { requestId, accept } = req.body;
+
+  const request = await Request.findById(requestId)
+    .populate("sender", "name")
+    .populate("receiver", "name");
+
+  if (!request) return next(new ErrorHandler("Request not found", 400));
+
+  if (request.receiver._id.toString() !== req.user.toString())
+    return next(
+      new ErrorHandler("You are not authorized to accept this request", 401)
+    );
+
+  if (!accept) {
+    await request.deleteOne();
+
+    return res.status(200).json({
+      success: true,
+      message: "Friend request rejected",
+    });
+  }
+
+  const members = [request.sender._id, request.receiver._id];
+
+  await Promise.all([
+    Chat.create({
+      members,
+      name: `${request.sender.name} - ${request.receiver.name} `,
+    }),
+    request.deleteOne(),
+  ]);
+
+  emitEvent(req, REFETCH_CHATS, members);
+
+  return res.status(200).json({
+    success: true,
+    message: "Friend request accepted",
+    senderId: request.sender._id,
   });
 });
