@@ -6,6 +6,8 @@ import cookieParser from "cookie-parser";
 
 import userRoute from "./routes/user.route.js";
 import chatRoute from "./routes/chat.route.js";
+import adminRoute from "./routes/admin.route.js";
+
 // import {
 //   createGroupChats,
 //   createMessages,
@@ -38,6 +40,7 @@ app.use(cookieParser());
 
 app.use("/user", userRoute);
 app.use("/chat", chatRoute);
+app.use("/admin", adminRoute);
 
 app.get("/hello", (req, res) => {
   res.send("Hey there, This is home route");
