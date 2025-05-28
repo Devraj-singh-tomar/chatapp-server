@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  adminData,
   adminLogin,
   adminLogout,
   getAllChats,
@@ -20,7 +21,7 @@ app.get("/logout", adminLogout);
 // ONLY ADMIN CAN ACCESS THESE ROUTES
 app.use(adminOnly);
 
-// app.get("/");
+app.get("/", adminData);
 
 app.get("/users", getAllUsers);
 
