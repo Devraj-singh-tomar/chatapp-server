@@ -9,14 +9,18 @@ import {
 } from "../controllers/admin.controller.js";
 
 import { adminLoginValidator, validateHandler } from "../lib/validators.js";
+import { adminOnly } from "../middlewares/auth.js";
 
 const app = express.Router();
-
-// app.get("/");
 
 app.post("/verify", adminLoginValidator(), validateHandler, adminLogin);
 
 app.get("/logout", adminLogout);
+
+// ONLY ADMIN CAN ACCESS THESE ROUTES
+app.use(adminOnly);
+
+// app.get("/");
 
 app.get("/users", getAllUsers);
 
