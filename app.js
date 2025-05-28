@@ -22,6 +22,7 @@ config({
 
 const mongoURI = process.env.MONGO_URI;
 const port = process.env.PORT || 3000;
+export const envMode = process.env.NODE_ENV.trim() || "PRODUCTION";
 export const adminSecretKey = process.env.ADMIN_SECRET_KEY || "asdasasgdasdasd";
 
 connectDB(mongoURI);
@@ -50,5 +51,5 @@ app.get("/hello", (req, res) => {
 app.use(errorMiddleware);
 
 app.listen(port, () => {
-  console.log(`server is running on port ${port}`);
+  console.log(`server is running on port ${port} in ${envMode} mode`);
 });
