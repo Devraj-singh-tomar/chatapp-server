@@ -2,8 +2,9 @@ import jwt from "jsonwebtoken";
 import { ErrorHandler } from "../utils/utility.js";
 import { adminSecretKey } from "../app.js";
 import { fi } from "@faker-js/faker";
+import { TryCatch } from "./error.js";
 
-export const isAuthenticated = (req, res, next) => {
+export const isAuthenticated = TryCatch((req, res, next) => {
   const token = req.cookies["token"];
 
   if (!token) return next(new ErrorHandler("Please login to get access", 401));
@@ -15,7 +16,7 @@ export const isAuthenticated = (req, res, next) => {
   req.user = decodedData._id;
 
   next();
-};
+});
 
 export const adminOnly = (req, res, next) => {
   const token = req.cookies["admin-token"];

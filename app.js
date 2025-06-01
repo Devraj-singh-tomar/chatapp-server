@@ -9,6 +9,7 @@ import { v4 as uuid } from "uuid";
 import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from "./constants/events.js";
 import { getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.model.js";
+import cors from "cors";
 
 import userRoute from "./routes/user.route.js";
 import chatRoute from "./routes/chat.route.js";
@@ -48,10 +49,20 @@ const io = new Server(server, {});
 // Middleware's
 app.use(express.json());
 app.use(cookieParser());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:4173",
+      process.env.CLIENT_URL,
+    ],
+    credentials: true,
+  })
+);
 
-app.use("/user", userRoute);
-app.use("/chat", chatRoute);
-app.use("/admin", adminRoute);
+app.use("/api/v1/user", userRoute);
+app.use("/api/v1/chat", chatRoute);
+app.use("/api/v1/admin", adminRoute);
 
 app.get("/hello", (req, res) => {
   res.send("Hey there, This is home route");
