@@ -11,6 +11,8 @@ import { getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.model.js";
 import cors from "cors";
 import { v2 as cloudinary } from "cloudinary";
+import { corsOptions } from "./constants/config.js";
+import { socketAuthenticator } from "./middlewares/auth.js";
 
 import userRoute from "./routes/user.route.js";
 import chatRoute from "./routes/chat.route.js";
@@ -51,21 +53,14 @@ cloudinary.config({
 
 const app = express();
 const server = createServer(app);
-const io = new Server(server, {});
+const io = new Server(server, {
+  cors: corsOptions,
+});
 
 // Middleware's
 app.use(express.json());
 app.use(cookieParser());
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:4173",
-      process.env.CLIENT_URL,
-    ],
-    credentials: true,
-  })
-);
+app.use(cors(corsOptions));
 
 app.use("/api/v1/user", userRoute);
 app.use("/api/v1/chat", chatRoute);
@@ -75,13 +70,18 @@ app.get("/hello", (req, res) => {
   res.send("Hey there, This is home route");
 });
 
-io.use((socket, next) => {});
+// SOCKET MIDDLEWARE -------------------------------
+
+io.use((socket, next) => {
+  cookieParser()(
+    socket.request,
+    socket.request.res,
+    async (err) => await socketAuthenticator(err, socket, next)
+  );
+});
 
 io.on("connection", (socket) => {
-  const user = {
-    _id: "asdfeq",
-    name: "John",
-  };
+  const user = socket.user;
 
   userSocketIDs.set(user._id.toString(), socket.id);
 
