@@ -3,7 +3,11 @@ import { ErrorHandler } from "../utils/utility.js";
 import { Chat } from "../models/chat.model.js";
 import { User } from "../models/user.model.js";
 import { Message } from "../models/message.model.js";
-import { deleteFilesFromCloudinary, emitEvent } from "../utils/features.js";
+import {
+  deleteFilesFromCloudinary,
+  emitEvent,
+  uploadFilesToCloudinary,
+} from "../utils/features.js";
 import {
   ALERT,
   NEW_MESSAGE,
@@ -238,14 +242,13 @@ export const sendAttachments = TryCatch(async (req, res, next) => {
     User.findById(req.user, "name"),
   ]);
 
-  if (!chat) return next(new ErrorHandler("Chat not found", 400));
+  if (!chat) return next(new ErrorHandler("Chat not found", 404));
 
   if (files.length < 1)
     return next(new ErrorHandler("Please provide attachments", 400));
 
-  //  UPLOAD FILES HERE
-
-  const attachments = [];
+  //   Upload files here
+  const attachments = await uploadFilesToCloudinary(files);
 
   const messageForDB = {
     content: "",
@@ -254,7 +257,7 @@ export const sendAttachments = TryCatch(async (req, res, next) => {
     chat: chatId,
   };
 
-  const messageForRealtime = {
+  const messageForRealTime = {
     ...messageForDB,
     sender: {
       _id: me._id,
@@ -265,13 +268,11 @@ export const sendAttachments = TryCatch(async (req, res, next) => {
   const message = await Message.create(messageForDB);
 
   emitEvent(req, NEW_MESSAGE, chat.members, {
-    message: messageForRealtime,
+    message: messageForRealTime,
     chatId,
   });
 
-  emitEvent(req, NEW_MESSAGE_ALERT, chat.members, {
-    chatId,
-  });
+  emitEvent(req, NEW_MESSAGE_ALERT, chat.members, { chatId });
 
   return res.status(200).json({
     success: true,

@@ -50,7 +50,7 @@ app.delete("/leave/:id", chatIdValidator(), validateHandler, leaveGroup);
 app.post(
   "/message",
   attachmentsMulter,
-  sendAttachmentsValidator,
+  sendAttachmentsValidator(),
   validateHandler,
   sendAttachments
 );
