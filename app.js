@@ -7,8 +7,11 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import { v4 as uuid } from "uuid";
 import {
+  CHAT_JOINED,
+  CHAT_LEAVED,
   NEW_MESSAGE,
   NEW_MESSAGE_ALERT,
+  ONLINE_USERS,
   START_TYPING,
   STOP_TYPING,
 } from "./constants/events.js";
@@ -40,6 +43,7 @@ const port = process.env.PORT || 3000;
 export const envMode = process.env.NODE_ENV.trim() || "PRODUCTION";
 export const adminSecretKey = process.env.ADMIN_SECRET_KEY || "asdasasgdasdasd";
 export const userSocketIDs = new Map();
+const onlineUsers = new Set();
 
 connectDB(mongoURI);
 
@@ -92,7 +96,7 @@ io.on("connection", (socket) => {
 
   userSocketIDs.set(user._id.toString(), socket.id);
 
-  console.log(userSocketIDs);
+  // console.log(userSocketIDs);
 
   socket.on(NEW_MESSAGE, async ({ chatId, members, message }) => {
     const messageForRealTime = {
@@ -148,9 +152,31 @@ io.on("connection", (socket) => {
     socket.to(membersSocket).emit(STOP_TYPING, { chatId });
   });
 
+  socket.on(CHAT_JOINED, ({ userId, members }) => {
+    onlineUsers.add(userId.toString());
+
+    const membersSocket = getSockets(members);
+
+    io.to(membersSocket).emit(ONLINE_USERS, Array.from(onlineUsers));
+
+    console.log("Chat joined", userId);
+  });
+
+  socket.on(CHAT_LEAVED, ({ userId, members }) => {
+    onlineUsers.delete(userId.toString());
+
+    const membersSocket = getSockets(members);
+
+    io.to(membersSocket).emit(ONLINE_USERS, Array.from(onlineUsers));
+
+    console.log("Chat leaved", userId);
+  });
+
   socket.on("disconnect", () => {
-    console.log("User disconnect", socket.id);
+    // console.log("User disconnect", socket.id);
     userSocketIDs.delete(user._id.toString());
+    onlineUsers.add(user._id.toString());
+    socket.broadcast.emit(ONLINE_USERS, Array.from(onlineUsers));
   });
 });
 
